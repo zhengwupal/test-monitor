@@ -1,3 +1,4 @@
+#!/usr/bin/env bash
 num=1
 bp=$(df | grep "ONCOBOX" | cut -d " " -f 1 | cut -d "/" -f 3)
 b=$(echo "$bp" | cut -c 1-3)
