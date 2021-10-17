@@ -16,13 +16,11 @@ while true; do
             # shellcheck disable=SC2046
             shim_tree=$(ps --forest $(ps -e --no-header -o pid,ppid|awk -vp="$i" 'function r(s){print s;s=a[s];while(s){sub(",","",s);t=s;sub(",.*","",t);sub("[0-9]+","",s);r(t)}}{a[$2]=a[$2]","$1}END{r(p)}'))
 #            echo "$shim_tree"
-            shim_tree_pid=$(echo "$shim_tree" | head -n 3 | tail -n 1 | sed 's/^ //g' | cut -d " " -f 1)
-            echo "$i ====== $shim_tree_pid"
-            pcmp=$(ps --no-header -o pid,pcpu,pmem,cmd -g "$shim_tree_pid")
+            shim_tree_pid=$(echo "$shim_tree" | head -n 3 | tail -n 1 | sed 's/^ *//g' | cut -d " " -f 1)
+            pcmp=$(ps --no-header -o pid,pcpu,pmem,cmd -g "$shim_tree_pid" | sed 's/^ *//g' | sed 's/\s\+/ /g')
 #            echo "$pcmp"
-
 #            echo "$pcmp" | sed 's/^ //g' | sed 's/\s\+/ /g' | cut -d ' ' -f 2-3
-            cm=$(echo "$pcmp" | sed 's/^ //g' | sed 's/\s\+/ /g' | cut -d ' ' -f 2-3 | awk '{sum1+=$1;sum2+=$2} END {print sum1,sum2}')
+            cm=$(echo "$pcmp" | cut -d ' ' -f 2-3 | awk '{sum1+=$1;sum2+=$2} END {print sum1,sum2}')
 #            echo "$cm"
 
             winfo=$(echo "$pcmp" | grep "cromwell-executions" | grep "bash" | head -n 1 | awk -F ' ' '{print $NF}')
@@ -36,10 +34,11 @@ while true; do
             shname=$(echo "$sinfo" | cut -d "." -f 2-)
 
             ctime=$(date "+%Y-%m-%d %H:%M:%S")
-            tcpu=$(top -n 1 -b | head -n 3 | tail -n 1 | cut -d "," -f 1 | sed -r 's/%Cpu\(s\):(.*)us/\1/' | sed 's/ //g')
+            tcpu=$(top -n 1 -b | head -n 3 | tail -n 1 | cut -d ":" -f 2 | sed 's/^ *//g' | cut -d " " -f 1)
             tmem=$(free | head -n 2 | tail -n 1 | awk '{print ($2-$7)/$2*100}')
             bio=$(iostat -d -x -k 1 2 -p "$b" | grep "$bp" | tail -n 1 | awk -F ' ' '{print $NF}')
 
+            echo "$ctime == $i ====== $shim_tree_pid"
             echo "$ctime $tcpu $tmem $bio $cm $wtype $wid $wstep $sname $shname" >> test.log
         } &
         done
